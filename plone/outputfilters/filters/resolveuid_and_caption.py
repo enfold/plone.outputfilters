@@ -277,6 +277,11 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                           image.height == original_height),
             'width': attributes.get('width', width),
             }
+
+        if options['originalalt'] and options['originalalt'].startswith('caption:'):
+            options['caption'] = newline_to_br(html_quote(options['originalalt'][8:].strip()))
+            options['originalalt'] = None
+
         if self.in_link:
             # Must preserve original link, don't overwrite
             # with a link to the image
