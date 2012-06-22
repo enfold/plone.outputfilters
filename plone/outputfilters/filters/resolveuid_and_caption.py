@@ -263,10 +263,22 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
             else:
                 tag = view.tag
             width = original_width
+
+        alt = attributes.get('alt', None)
+        caption = newline_to_br(html_quote(caption))
+        if alt and alt.startswith('caption:'):
+            caption = newline_to_br(html_quote(alt[8:].strip()))
+            alt = image.description
+            
+        if not alt:
+            alt = image.description
+            
+        attributes['alt'] = alt
+
         options = {
             'class': klass,
             'originalwidth': attributes.get('width', None),
-            'originalalt': attributes.get('alt', None),
+            'originalalt': alt,
             'url_path': fullimage.absolute_url_path(),
             'caption': newline_to_br(html_quote(caption)),
             'image': image,
@@ -277,10 +289,6 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                           image.height == original_height),
             'width': attributes.get('width', width),
             }
-
-        if options['originalalt'] and options['originalalt'].startswith('caption:'):
-            options['caption'] = newline_to_br(html_quote(options['originalalt'][8:].strip()))
-            options['originalalt'] = None
 
         if self.in_link:
             # Must preserve original link, don't overwrite
