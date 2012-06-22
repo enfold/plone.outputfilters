@@ -264,21 +264,10 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                 tag = view.tag
             width = original_width
 
-        alt = attributes.get('alt', None)
-        caption = newline_to_br(html_quote(caption))
-        if alt and alt.startswith('caption:'):
-            caption = newline_to_br(html_quote(alt[8:].strip()))
-            alt = image.description
-            
-        if not alt:
-            alt = image.description
-            
-        attributes['alt'] = alt
-
         options = {
             'class': klass,
             'originalwidth': attributes.get('width', None),
-            'originalalt': alt,
+            'originalalt': attributes.get('alt', None),
             'url_path': fullimage.absolute_url_path(),
             'caption': newline_to_br(html_quote(caption)),
             'image': image,
@@ -339,8 +328,14 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                 image, fullimage, src, description = self.resolve_image(src)
                 attributes["src"] = src
                 caption = description
+
+                alt = attributes.get('alt', None)
+                if alt and alt.startswith('caption:'):
+                    caption = alt[8:].strip()
+                    attributes['alt'] = image.description
+
                 # Check if the image needs to be captioned
-                if (self.captioned_images and image is not None and caption
+                if (self.captioned_images and image is not None and caption 
                     and 'captioned' in attributes.get('class', '').split(' ')):
                     self.handle_captioned_image(attributes, image, fullimage,
                                                 caption)
