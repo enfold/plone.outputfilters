@@ -332,7 +332,7 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                 alt = attributes.get('alt', None)
                 if alt and alt.startswith('caption:'):
                     caption = alt[8:].strip()
-                    attributes['alt'] = image.description
+                    attributes['alt'] = description
 
                 # Check if the image needs to be captioned
                 if (self.captioned_images and image is not None and caption 
