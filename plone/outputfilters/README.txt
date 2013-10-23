@@ -2,15 +2,33 @@ Adding a custom filter
 ======================
 
 As an example, the following filter replaces all doubled hyphens ("--") with em
-dashes ("—"). (Don't use the example verbatim, because it doesn't parse HTML to
+dashes ("-"). (Don't use the example verbatim, because it doesn't parse HTML to
 apply itself only to text nodes, so will mangle HTML comments.)
 
 A filter is a callable which accepts a UTF-8-encoded HTML string as input, and
 returns a modified UTF-8-encoded HTML string. A return value of ``None`` may be
 used to indicate that the input should not be modified.
 
- .. include:: plone/outputfilters/filters/example.py
-    :literal:
+Example::
+
+    import re
+    from zope.interface import implements
+    from plone.outputfilters.interfaces import IFilter
+
+    class EmDashAdder(object):
+        implements(IFilter)
+        order = 1000
+
+        def __init__(self, context, request):
+            pass
+
+        def is_enabled(self):
+            return True
+
+        pattern = re.compile(r'--')
+
+        def __call__(self, data):
+            return self.pattern.sub('\xe2\x80\x94', data)
 
 The ``order`` attribute may be used to affect the order in which filters are
 applied (higher values run later). The is_enabled method should return a boolean

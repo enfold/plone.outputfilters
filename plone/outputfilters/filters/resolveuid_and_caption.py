@@ -8,6 +8,7 @@ try:
     from zope.component.hooks import getSite
 except ImportError:
     from zope.app.component.hooks import getSite
+from Products.CMFCore.interfaces import IContentish
 from zope.cachedescriptors.property import Lazy as lazy_property
 from zope.component import getAllUtilitiesRegisteredFor
 from zope.interface import implements, Interface, Attribute
@@ -28,7 +29,7 @@ except ImportError:
 from plone.outputfilters.interfaces import IFilter
 
 appendix_re = re.compile('^(.*)([\?#].*)$')
-resolveuid_re = re.compile('^[./]*resolveuid/([^/]*)/?(.*)$')
+resolveuid_re = re.compile('^[./]*resolve[Uu]id/([^/]*)/?(.*)$')
 
 # The SGMLParser works differently on Python 2.4 and later
 # The attributes are passed escaped in the unknown_...-methods
@@ -50,8 +51,6 @@ class IResolveUidsEnabler(Interface):
     available = Attribute(
         "Boolean indicating whether UID links should be resolved.")
 
-singleton_tags = ["img", "area", "br", "hr", "input", "meta", "param", "col"]
-
 
 def tag(img, **attributes):
     if hasattr(aq_base(img), 'tag'):
@@ -61,6 +60,11 @@ def tag(img, **attributes):
 class ResolveUIDAndCaptionFilter(SGMLParser):
     """ Parser to convert UUID links and captioned images """
     implements(IFilter)
+
+    singleton_tags = set([
+      'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame',
+      'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
+      'source', 'track', 'wbr'])
 
     def __init__(self, context=None, request=None):
         SGMLParser.__init__(self)
@@ -98,7 +102,15 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
         else:
             return True
 
+    def _shorttag_replace(self, match):
+        tag = match.group(1)
+        if tag in self.singleton_tags:
+            return '<' + tag + ' />'
+        else:
+            return '<' + tag + '></' + tag + '>'
+
     def __call__(self, data):
+        data = re.sub(r'<([^<>\s]+?)\s*/>', self._shorttag_replace, data)
         self.feed(data)
         self.close()
         return self.getResult()
@@ -190,7 +202,7 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                         if components:
                             child = obj.scale(child_id, components.pop())
                         else:
-                            child = obj.field(child_id).get(obj.context)
+                            child = obj.scale(child_id)
                     else:
                         # Do not use restrictedTraverse here; the path to the
                         # image may lead over containers that lack the View
@@ -225,6 +237,8 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
             if fullimage is None:
                 return None, None, src, description
             image = traverse_path(fullimage, subpath[pos + 1:])
+            if image is None:
+                return None, None, src, description
         else:
             stack = traversal_stack(base, subpath)
             if stack is None:
@@ -232,13 +246,17 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
             image = stack.pop()
             # if it's a scale, find the full image by traversing one less
             fullimage = image
-            stack.reverse()
-            for parent in stack:
-                if hasattr(aq_base(parent), 'tag'):
-                    fullimage = parent
-                    break
+            if not IContentish.providedBy(fullimage):
+                stack.reverse()
+                for parent in stack:
+                    if hasattr(aq_base(parent), 'tag'):
+                        fullimage = parent
+                        break
 
-        src = image.absolute_url() + appendix
+        url = image.absolute_url()
+        if isinstance(url, unicode):
+            url = url.encode('utf8')
+        src = url + appendix
         description = aq_acquire(fullimage, 'Description')()
         return image, fullimage, src, description
 
@@ -344,15 +362,16 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                     # Check to see if the alt / title tags need setting
                     title = aq_acquire(fullimage, 'Title')()
                     if 'alt' not in attributes:
-                        attributes['alt'] = title
+                        attributes['alt'] = description or title
                     if 'title' not in attributes:
                         attributes['title'] = title
                     attrs = attributes.iteritems()
 
         # Add the tag to the result
         strattrs = "".join([' %s="%s"'
-                               % (key, escape(value)) for key, value in attrs])
-        if tag in singleton_tags:
+                               % (key, escape(value, quote=True))
+                                    for key, value in attrs])
+        if tag in self.singleton_tags:
             self.append_data("<%s%s />" % (tag, strattrs))
         else:
             self.append_data("<%s%s>" % (tag, strattrs))

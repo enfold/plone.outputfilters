@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '1.4.dev0'
+version = '1.12.dev0'
 
 setup(name='plone.outputfilters',
       version=version,
@@ -31,7 +31,6 @@ setup(name='plone.outputfilters',
           'Products.GenericSetup',
           'Products.MimetypesRegistry',
           'Products.PortalTransforms',
-          # -*- Extra requirements: -*-
       ],
       extras_require={
           'test': ['Products.PloneTestCase'],
