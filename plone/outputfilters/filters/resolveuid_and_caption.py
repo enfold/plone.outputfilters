@@ -343,7 +343,7 @@ class ResolveUIDAndCaptionFilter(SGMLParser):
                 src = attributes.get('src', '')
                 image, fullimage, src, description = self.resolve_image(src)
                 attributes["src"] = src
-                caption = description
+                caption = attributes.get('data-caption')
                 # Check if the image needs to be captioned
                 if (self.captioned_images and image is not None and caption
                     and 'captioned' in attributes.get('class', '').split(' ')):
