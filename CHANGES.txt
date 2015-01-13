@@ -1,7 +1,27 @@
 Changelog
 =========
 
-1.12 (unreleased)
+1.15 (unreleased)
+-----------------
+
+- Nothing changed yet.
+
+
+1.14 (2014-04-22)
+-----------------
+
+- for plone 5, always resolveuids
+  [vangheem]
+
+
+1.13 (2014-04-13)
+-----------------
+
+- #12783 img tag referencing non existent scales leads to transform error
+  [anthonygerrard]
+
+
+1.12 (2014-01-27)
 -----------------
 
 - Nothing changed yet.
